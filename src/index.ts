@@ -6,6 +6,8 @@ import compression from "compression";
 import helmet from "helmet";
 import type { CorsOptions } from "cors";
 import limiter from "@/lib/express_rate_limit";
+import { connectToDatabase, disconnectFromDatabase } from "@/lib/mongoose";
+import { logger } from "@/lib/winston"
 import v1Router from "@/routes/v1";
 
 const app = express();
@@ -18,7 +20,8 @@ const corsOptions: CorsOptions = {
         } else {
             // Reject requests from non-whitelisted origins
             callback(new Error(`CORS error: ${origin} is not allowed by CORS`), false);
-            console.log(`CORS error: ${origin} is not allowed by CORS`);
+            // console.log(`CORS error: ${origin} is not allowed by CORS`);
+            logger.warn(`CORS error: ${origin} is not allowed by CORS`);
 
         }
     }
@@ -43,9 +46,14 @@ app.use(limiter);
 // routes
 (async () => {
     try {
+        await connectToDatabase();
         app.use("/api/v1", v1Router);
+        app.listen(PORT, () => {
+            logger.info(`Server is running at http://localhost:${PORT}`);
+
+        })
     } catch (error) {
-        console.log("Failed to start the server", error);
+        logger.error("Failed to start the server", error);
 
         if (config.NODE_ENV === "production") {
             process.exit(1);
@@ -64,11 +72,12 @@ app.use(limiter);
 
 const handleServerShutdown = async () => {
     try {
-        console.log(`Server SHUTDOWN`);
+        await disconnectFromDatabase();
+        logger.warn(`Server SHUTDOWN`);
         process.exit(0);
-        
+
     } catch (error) {
-        console.log(`Error during server shutdown`,error);
+        logger.error(`Error during server shutdown`, error);
     }
 }
 
@@ -82,9 +91,3 @@ const handleServerShutdown = async () => {
 
 process.on("SIGTERM", handleServerShutdown);
 process.on("SIGINT", handleServerShutdown);
-
-
-app.listen(PORT, () => {
-    console.log(`Server is running at http://localhost:${PORT}`);
-
-})

@@ -2,6 +2,9 @@ import { Router } from "express";
 
 const router = Router();
 
+// routes
+import authRouter from "./auth"
+
 router
     .route("/")
     .get((req, res) => {
@@ -14,6 +17,9 @@ router
                 docs: "http://docs.blog-api.sumit.com",
                 timestamp: new Date().toISOString(),
             })
-    })
+    });
+
+router
+    .use("/auth",authRouter);
 
 export default router;
