@@ -1,0 +1,100 @@
+import { Schema, model } from "mongoose";
+import bcrypt from "bcryptjs";
+
+export interface IUser {
+    username: string;
+    email: string;
+    password: string;
+    role: "admin" | "user";
+    firstName?: string;
+    lastName?: string;
+    socialLinks?: {
+        website?: string;
+        facebook?: string;
+        instagram?: string;
+        linkedin?: string;
+        x?: string;
+        youtube?: string
+    }
+}
+
+/**
+ * User Schema
+ */
+const userSchema = new Schema<IUser>({
+    username: {
+        type: String,
+        required: [true, "Username is required"],
+        maxLength: [20, "Username must be less than 20 characters"],
+        unique: [true, "Username must be unique"],
+    },
+    email: {
+        type: String,
+        required: [true, "Email is required"],
+        maxLength: [50, "Email must be less than 50 characters"],
+        unique: [true, "Email must be unique"],
+    },
+    password: {
+        type: String,
+        required: [true, "Password is required"],
+        select: false,
+    },
+    role: {
+        type: String,
+        required: [true, "Role is required"],
+        enum: {
+            values: ["admin", "user"],
+            message: "{VALUE} is not supported",
+        },
+        default: "user"
+    },
+    firstName: {
+        type: String,
+        maxLength: [20, "First name must be less than 20 characters"],
+    },
+    lastName: {
+        type: String,
+        maxLength: [20, "Last name must be less than 20 characters"],
+    },
+    socialLinks: {
+        website: {
+            type: String,
+            kMaxLength: [100, "Website address must be less than 100 characters"],
+        },
+        facebook: {
+            type: String,
+            kMaxLength: [100, "Facebook profile url must be less than 100 characters"],
+        },
+        instagram: {
+            type: String,
+            kMaxLength: [100, "Instagram profile url must be less than 100 characters"],
+        },
+        linkedin: {
+            type: String,
+            kMaxLength: [100, "Linkedin profile url must be less than 100 characters"],
+        },
+        x: {
+            type: String,
+            kMaxLength: [100, "X profile url must be less than 100 characters"],
+        },
+        youtube: {
+            type: String,
+            kMaxLength: [100, "Youtube channel url must be less than 100 characters"],
+        },
+    }
+}, {
+    timestamps: true,
+})
+
+const User = model<IUser>("User", userSchema);
+
+userSchema.pre("save", async function(next) {
+    if(!this.isModified("password")) return;
+
+    this.password = await bcrypt.hash(this.password,10);
+
+    next();
+
+})
+
+export default User;
